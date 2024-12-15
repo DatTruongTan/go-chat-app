@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>WebSocket Client</title>
+	</head>
+	<body>
+		<h1>WebSocket Client</h1>
+		<div>
+			<label for="message">Public chat:</label>
+			<input type="text" id="message" placeholder="Type your message..." />
+			<button id="send">Send</button>
+		</div>
+		<div>
+			<h3>Logs:</h3>
+			<div
+				id="logs"
+				style="
+					border: 1px solid #ccc;
+					padding: 10px;
+					height: 200px;
+					overflow-y: auto;
+				"
+			></div>
+		</div>
+
+		<div>
+			<h3>Notifications from Server:</h3>
+			<div
+				id="orderbook"
+				style="
+					border: 1px solid #ccc;
+					padding: 10px;
+					height: 100px;
+					overflow-y: auto;
+				"
+			></div>
+		</div>
+
+		<script>
+			// Connect to the main WebSocket server (for sending/receiving messages)
+			const ws = new WebSocket('ws://localhost:1337/ws');
+			// Connect to the orderbook WebSocket server (for orderbook updates)
+			const orderbookWs = new WebSocket('ws://localhost:1337/orderbook');
+
+			const logs = document.getElementById('logs');
+			const orderbook = document.getElementById('orderbook');
+			const sendButton = document.getElementById('send');
+			const messageInput = document.getElementById('message');
+
+			// Function to add logs to the page
+			function addLog(message) {
+				const logEntry = document.createElement('div');
+				logEntry.textContent = message;
+				logs.appendChild(logEntry);
+				logs.scrollTop = logs.scrollHeight; // Auto-scroll to the bottom
+			}
+
+			// Function to add order book updates to the page
+			function addOrderBook(message) {
+				const orderbookEntry = document.createElement('div');
+				orderbookEntry.textContent = message;
+				orderbook.appendChild(orderbookEntry);
+				orderbook.scrollTop = orderbook.scrollHeight; // Auto-scroll to the bottom
+			}
+
+			// WebSocket event for the main WebSocket connection
+			ws.onopen = () => {
+				addLog('Connected to server (main).');
+			};
+
+			ws.onmessage = (event) => {
+				addLog('Received (main): ' + event.data); // Display messages received from the server
+			};
+
+			ws.onclose = () => {
+				addLog('Connection closed (main).');
+			};
+
+			ws.onerror = (error) => {
+				addLog('Error (main): ' + error);
+			};
+
+			// WebSocket event for the orderbook WebSocket connection
+			orderbookWs.onopen = () => {
+				addLog('Connected to server (orderbook feed).');
+			};
+
+			orderbookWs.onmessage = (event) => {
+				addOrderBook('Received Order Book: ' + event.data); // Display order book updates
+			};
+
+			orderbookWs.onclose = () => {
+				addLog('Connection closed (orderbook feed).');
+			};
+
+			orderbookWs.onerror = (error) => {
+				addLog('Error (orderbook feed): ' + error);
+			};
+
+			// Send message to the server when the "Send" button is clicked
+			sendButton.addEventListener('click', () => {
+				const message = messageInput.value;
+				if (message) {
+					ws.send(message); // Send message to the main WebSocket server
+					addLog('Sent: ' + message);
+					messageInput.value = '';
+				}
+			});
+		</script>
+	</body>
+</html>
